@@ -5,7 +5,7 @@
       "use": "@vercel/python"
     },
     {
-      "src": "frontend/**",
+      "src": "frontend/",
       "use": "@vercel/static"
     }
   ],
@@ -17,6 +17,18 @@
     {
       "src": "/admin/(.*)",
       "dest": "/backend/vercel_app.py"
+    },
+    {
+      "src": "/(api|admin)",
+      "dest": "/backend/vercel_app.py"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/frontend/app.js"
+    },
+    {
+      "src": "/styles.css",
+      "dest": "/frontend/styles.css"
     },
     {
       "src": "/manifest.webmanifest",
