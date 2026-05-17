@@ -2,15 +2,13 @@ import os
 import sys
 from io import BytesIO
 
-sys.path.insert(0, os.path.dirname(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django
 django.setup()
-
-from django.core.handlers.wsgi import WSGIHandler
 
 def handler(event, context):
     http_method = event.get('httpMethod', 'GET')
@@ -35,6 +33,7 @@ def handler(event, context):
         'wsgi.run_once': False,
         'wsgi.version': (1, 0),
         'wsgi.url_scheme': 'https',
+        'CONTENT_TYPE': headers.get('content-type', ''),
     }
 
     for key, value in headers.items():
@@ -45,11 +44,20 @@ def handler(event, context):
     if body:
         environ['CONTENT_LENGTH'] = str(len(body))
 
+    response_status = [None]
+    response_headers = [None]
+
+    def start_response(status, headers, exc_info=None):
+        response_status[0] = int(status.split()[0])
+        response_headers[0] = dict(headers)
+        return lambda x: None
+
+    from django.core.handlers.wsgi import WSGIHandler
     response = WSGIHandler()(environ, start_response)
 
     return {
-        'statusCode': response.status_code if hasattr(response, 'status_code') else 200,
-        'headers': {k: v for k, v in response.items()},
+        'statusCode': response_status[0] or 200,
+        'headers': response_headers[0] or {},
         'body': b''.join(response).decode('utf-8')
     }
 

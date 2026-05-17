@@ -5,30 +5,30 @@
       "use": "@vercel/python"
     },
     {
-      "src": "frontend/",
+      "src": "frontend/**",
       "use": "@vercel/static"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/vercel_app.py"
+      "src": "/api/(.*)",
+      "dest": "/backend/vercel_app.py"
     },
     {
-      "source": "/admin/(.*)",
-      "destination": "/backend/vercel_app.py"
+      "src": "/admin/(.*)",
+      "dest": "/backend/vercel_app.py"
     },
     {
-      "source": "/manifest.webmanifest",
-      "destination": "/frontend/manifest.webmanifest"
+      "src": "/manifest.webmanifest",
+      "dest": "/frontend/manifest.webmanifest"
     },
     {
-      "source": "/sw.js",
-      "destination": "/frontend/sw.js"
+      "src": "/sw.js",
+      "dest": "/frontend/sw.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/frontend/index.html"
+      "src": "/(.*)",
+      "dest": "/frontend/index.html"
     }
   ]
 }
