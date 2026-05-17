@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "backend/api_handler.py",
+      "src": "backend/vercel_app.py",
       "use": "@vercel/python"
     },
     {
@@ -12,15 +12,15 @@
   "routes": [
     {
       "src": "/api/",
-      "dest": "backend/api_handler.py"
+      "dest": "backend/vercel_app.py"
     },
     {
       "src": "/admin/",
-      "dest": "backend/api_handler.py"
+      "dest": "backend/vercel_app.py"
     },
     {
       "src": "/static/",
-      "dest": "backend/api_handler.py"
+      "dest": "backend/vercel_app.py"
     },
     {
       "src": "/manifest.webmanifest",
