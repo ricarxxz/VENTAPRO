@@ -1,18 +1,34 @@
 {
-  "version": 2,
   "builds": [
     {
-      "src": "backend/vercel_app.py",
+      "src": "backend/api_handler.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "handle": "filesystem"
+      "src": "/api/",
+      "dest": "backend/api_handler.py"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "backend/vercel_app.py"
+      "src": "/admin/",
+      "dest": "backend/api_handler.py"
+    },
+    {
+      "src": "/static/",
+      "dest": "backend/api_handler.py"
+    },
+    {
+      "src": "/manifest.webmanifest",
+      "dest": "frontend/manifest.webmanifest"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "frontend/sw.js"
     },
     {
       "src": "/(.*)",
