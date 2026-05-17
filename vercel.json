@@ -9,30 +9,26 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/backend/vercel_app.py"
+      "source": "/api/(.*)",
+      "destination": "/backend/vercel_app.py"
     },
     {
-      "src": "/admin/(.*)",
-      "dest": "/backend/vercel_app.py"
+      "source": "/admin/(.*)",
+      "destination": "/backend/vercel_app.py"
     },
     {
-      "src": "/static/(.*)",
-      "dest": "/backend/vercel_app.py"
+      "source": "/manifest.webmanifest",
+      "destination": "/frontend/manifest.webmanifest"
     },
     {
-      "src": "/manifest.webmanifest",
-      "dest": "frontend/manifest.webmanifest"
+      "source": "/sw.js",
+      "destination": "/frontend/sw.js"
     },
     {
-      "src": "/sw.js",
-      "dest": "frontend/sw.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/index.html"
+      "source": "/(.*)",
+      "destination": "/frontend/index.html"
     }
   ]
 }
