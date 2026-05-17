@@ -58,3 +58,5 @@ def handler(event, context):
         'headers': {k: v for k, v in response.items()},
         'body': response.content.decode('utf-8')
     }
+
+app = handler
