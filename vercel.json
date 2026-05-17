@@ -5,7 +5,23 @@
       "use": "@vercel/python"
     },
     {
-      "src": "frontend/",
+      "src": "frontend/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "frontend/app.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "frontend/styles.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "frontend/manifest.webmanifest",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "frontend/sw.js",
       "use": "@vercel/static"
     }
   ],
@@ -17,30 +33,6 @@
     {
       "src": "/admin/(.*)",
       "dest": "/backend/vercel_app.py"
-    },
-    {
-      "src": "/(api|admin)",
-      "dest": "/backend/vercel_app.py"
-    },
-    {
-      "src": "/app.js",
-      "dest": "/frontend/app.js"
-    },
-    {
-      "src": "/styles.css",
-      "dest": "/frontend/styles.css"
-    },
-    {
-      "src": "/manifest.webmanifest",
-      "dest": "/frontend/manifest.webmanifest"
-    },
-    {
-      "src": "/sw.js",
-      "dest": "/frontend/sw.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/index.html"
     }
   ]
 }
