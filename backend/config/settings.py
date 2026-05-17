@@ -135,3 +135,13 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": False,
 }
+
+# 14. CONFIGURACIÓN VERCEL
+if os.getenv("VERCEL") == "1":
+    STATIC_ROOT = BASE_DIR / "staticfiles"
+    # Agregar dominio de Vercel a ALLOWED_HOSTS
+    vercel_url = os.getenv("VERCEL_URL", "")
+    if vercel_url and vercel_url not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(vercel_url)
+        ALLOWED_HOSTS.append(f"https://{vercel_url}")
+    DEBUG = False

@@ -1,0 +1,31 @@
+{
+  "builds": [
+    {
+      "src": "backend/vercel_app.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "15mb" }
+    },
+    {
+      "src": "frontend",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/vercel_app.py"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "backend/vercel_app.py"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "backend/vercel_app.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/index.html"
+    }
+  ]
+}
