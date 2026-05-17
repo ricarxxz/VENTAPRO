@@ -17,6 +17,29 @@ def handler(event, context):
     body = event.get('body', '') or ''
     query_string = event.get('queryStringParameters') or {}
 
+    static_extensions = ('.js', '.css', '.manifest', '.webmanifest')
+    if path.endswith(static_extensions) or path.startswith('/static/'):
+        frontend_dir = os.path.join(project_root, 'frontend')
+        file_path = os.path.join(frontend_dir, path.lstrip('/'))
+        
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            
+            content_types = {
+                '.js': 'application/javascript',
+                '.css': 'text/css',
+                '.manifest': 'application/manifest+json',
+                '.webmanifest': 'application/manifest+json'
+            }
+            ext = os.path.splitext(path)[1]
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': content_types.get(ext, 'text/plain')},
+                'body': content.decode('utf-8')
+            }
+
     wsgi_input = BytesIO(body.encode('utf-8') if body else b'')
 
     environ = {
