@@ -500,10 +500,10 @@ async function createCashier(userData) {
   const cashierData = {
     username: userData.username,
     password: userData.password,
-    first_name: userData.nombre || "",    // Toma el campo 'nombre' del form
-    last_name: userData.apellido || "",   // Toma el campo 'apellido' del form
-    rol: "vendedor",                      // O 'cajero', según models.py
-    email: userData.email || userData.correo || "",
+    first_name: userData.first_name || "",
+    last_name: userData.last_name || "",
+    rol: "vendedor",
+    email: userData.email || "",
     telefono: userData.telefono || ""
   };
 
