@@ -14,7 +14,7 @@ django.setup()
 frontend_dir = os.path.join(handler_dir, '..', 'frontend')
 frontend_dir = os.path.normpath(frontend_dir)
 
-def handler(event, context):
+def vercel_handler(event, context):
     path = event.get('path', '/')
     
     static_extensions = ('.js', '.css', '.manifest', '.webmanifest')
@@ -55,8 +55,7 @@ def handler(event, context):
     return {
         'statusCode': 404,
         'headers': {'Content-Type': 'text/plain'},
-        'body': 'Not Found',
-        'isBase64Encoded': False
+        'body': 'Not Found'
     }
 
-application = handler
+application = vercel_handler

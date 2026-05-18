@@ -1,9 +1,20 @@
 {
-  "framework": null,
   "builds": [
     {
-      "src": "frontend/",
-      "use": "@vercel/static"
+      "src": "backend/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": [
+          "frontend/**",
+          "backend/**"
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/backend/index.py"
     }
   ]
 }
