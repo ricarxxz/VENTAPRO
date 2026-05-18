@@ -1,6 +1,5 @@
 import os
 import sys
-from base64 import b64encode
 
 handler_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, handler_dir)
@@ -11,12 +10,17 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 import django
 django.setup()
 
+# Add all possible Vercel domains to ALLOWED_HOSTS
+from django.conf import settings
+settings.ALLOWED_HOSTS = ['*']
+
 frontend_dir = os.path.join(handler_dir, '..', 'frontend')
 frontend_dir = os.path.normpath(frontend_dir)
 
-def vercel_handler(event, context):
-    path = event.get('path', '/')
+def app(environ, start_response):
+    path = environ.get('PATH_INFO', '/')
     
+    # Serve static frontend files
     static_extensions = ('.js', '.css', '.manifest', '.webmanifest')
     if path.endswith(static_extensions) or path.startswith('/static/'):
         file_path = os.path.join(frontend_dir, path.lstrip('/'))
@@ -33,29 +37,29 @@ def vercel_handler(event, context):
             }
             ext = os.path.splitext(path)[1]
             
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': content_types.get(ext, 'text/plain')},
-                'body': b64encode(content).decode('utf-8'),
-                'isBase64Encoded': True
-            }
+            status = '200 OK'
+            headers = [('Content-Type', content_types.get(ext, 'text/plain'))]
+            start_response(status, headers)
+            return [content]
 
-    if path == '/' or path == '':
-        index_path = os.path.join(frontend_dir, 'index.html')
-        if os.path.exists(index_path):
-            with open(index_path, 'rb') as f:
-                content = f.read()
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'text/html'},
-                'body': b64encode(content).decode('utf-8'),
-                'isBase64Encoded': True
-            }
+    # Let Django handle API, auth and admin routes
+    if path.startswith('/api') or path.startswith('/auth') or path.startswith('/admin'):
+        from django.core.handlers.wsgi import WSGIHandler
+        wsgi_app = WSGIHandler()
+        return wsgi_app(environ, start_response)
     
-    return {
-        'statusCode': 404,
-        'headers': {'Content-Type': 'text/plain'},
-        'body': 'Not Found'
-    }
-
-application = vercel_handler
+    # Serve index.html for all other routes (SPA)
+    index_path = os.path.join(frontend_dir, 'index.html')
+    if os.path.exists(index_path):
+        with open(index_path, 'rb') as f:
+            content = f.read()
+        
+        status = '200 OK'
+        headers = [('Content-Type', 'text/html')]
+        start_response(status, headers)
+        return [content]
+    
+    status = '404 Not Found'
+    headers = [('Content-Type', 'text/plain')]
+    start_response(status, headers)
+    return [b'Not Found']

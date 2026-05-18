@@ -13,6 +13,18 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "/backend/index.py"
+    },
+    {
+      "src": "/auth/(.*)",
+      "dest": "/backend/index.py"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "/backend/index.py"
+    },
+    {
       "src": "/(.*)",
       "dest": "/backend/index.py"
     }
