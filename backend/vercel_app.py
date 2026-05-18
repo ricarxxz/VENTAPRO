@@ -1,6 +1,6 @@
 import os
 import sys
-from io import BytesIO
+from base64 import b64encode
 
 handler_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, handler_dir)
@@ -14,12 +14,8 @@ django.setup()
 frontend_dir = os.path.join(os.path.dirname(handler_dir), 'frontend')
 
 def handler(event, context):
-    http_method = event.get('httpMethod', 'GET')
     path = event.get('path', '/')
-    headers = event.get('headers', {}) or {}
-    body = event.get('body', '') or ''
-    query_string = event.get('queryStringParameters') or {}
-
+    
     static_extensions = ('.js', '.css', '.manifest', '.webmanifest')
     if path.endswith(static_extensions) or path.startswith('/static/'):
         file_path = os.path.join(frontend_dir, path.lstrip('/'))
@@ -39,7 +35,8 @@ def handler(event, context):
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': content_types.get(ext, 'text/plain')},
-                'body': content.decode('utf-8')
+                'body': content.decode('utf-8'),
+                'isBase64Encoded': False
             }
 
     if path == '/' or path == '':
@@ -50,51 +47,15 @@ def handler(event, context):
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'text/html'},
-                'body': content
+                'body': content,
+                'isBase64Encoded': False
             }
-
-    wsgi_input = BytesIO(body.encode('utf-8') if body else b'')
-
-    environ = {
-        'REQUEST_METHOD': http_method,
-        'PATH_INFO': path,
-        'QUERY_STRING': '&'.join(f"{k}={v}" for k, v in query_string.items()) if query_string else '',
-        'SERVER_NAME': headers.get('host', 'localhost'),
-        'SERVER_PORT': headers.get('x-forwarded-port', '443'),
-        'HTTP_HOST': headers.get('host', ''),
-        'wsgi.input': wsgi_input,
-        'wsgi.errors': sys.stderr,
-        'wsgi.multithread': True,
-        'wsgi.multiprocess': True,
-        'wsgi.run_once': False,
-        'wsgi.version': (1, 0),
-        'wsgi.url_scheme': 'https',
-        'CONTENT_TYPE': headers.get('content-type', ''),
-    }
-
-    for key, value in headers.items():
-        key_upper = key.upper().replace('-', '_')
-        if key_upper not in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-            environ[f'HTTP_{key_upper}'] = value
-
-    if body:
-        environ['CONTENT_LENGTH'] = str(len(body))
-
-    response_status = [None]
-    response_headers = [None]
-
-    def start_response(status, headers, exc_info=None):
-        response_status[0] = int(status.split()[0])
-        response_headers[0] = dict(headers)
-        return lambda x: None
-
-    from django.core.handlers.wsgi import WSGIHandler
-    response = WSGIHandler()(environ, start_response)
-
+    
     return {
-        'statusCode': response_status[0] or 200,
-        'headers': response_headers[0] or {},
-        'body': b''.join(response).decode('utf-8')
+        'statusCode': 404,
+        'headers': {'Content-Type': 'text/plain'},
+        'body': 'Not Found',
+        'isBase64Encoded': False
     }
 
 app = handler
