@@ -500,10 +500,10 @@ async function createCashier(userData) {
   const cashierData = {
     username: userData.username,
     password: userData.password,
-    first_name: userData.first_name || "",
-    last_name: userData.last_name || "",
-    rol: "vendedor",
-    email: userData.email || "",
+    first_name: userData.nombre || "",    // Toma el campo 'nombre' del form
+    last_name: userData.apellido || "",   // Toma el campo 'apellido' del form
+    rol: "vendedor",                      // O 'cajero', según models.py
+    email: userData.email || userData.correo || "",
     telefono: userData.telefono || ""
   };
 
@@ -808,13 +808,7 @@ function shellView() {
   const meta = getViewMeta(state.activeView);
   return `
     <div class="screen">
-      <div class="sidebar-overlay"></div>
       <aside class="sidebar">
-        <button class="sidebar-close-btn mobile-menu-btn" type="button">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
         <div class="brand">
           <h1 class="brand-name">VentaPro</h1>
           <p class="brand-subtitle">Sistema de Ventas</p>
@@ -835,19 +829,12 @@ function shellView() {
       </aside>
       <section class="content-shell">
         <header class="topbar">
-          <div class="topbar-left">
-            <button class="mobile-menu-btn" type="button">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12h18M3 6h18M3 18h18"/>
-              </svg>
-            </button>
+          <div>
             <h1>${meta.title}</h1>
+            <div class="topbar-date">${getCurrentDateLabel()}</div>
           </div>
-          <div class="topbar-right">
-            <div id="sync-badge" class="sync-badge"></div>
-            <button class="topbar-link" type="button" data-action="logout">${iconLogout()} Cerrar Sesión</button>
-          </div>
-          <div class="topbar-date">${getCurrentDateLabel()}</div>
+          <div id="sync-badge" class="sync-badge"></div>
+          <button class="topbar-link" type="button" data-action="logout">${iconLogout()} Cerrar Sesión</button>
         </header>
         <main class="main"><div class="view">${renderView(state.activeView)}</div></main>
       </section>
@@ -2750,26 +2737,4 @@ function hideTooltip(tooltip) {
   if (!tooltip) return;
   tooltip.classList.remove("show");
 }
-
-// Mobile menu functionality
-document.addEventListener('click', function(e) {
-  if (window.innerWidth > 720) return;
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.querySelector('.sidebar-overlay');
-  const menuBtn = e.target.closest('.mobile-menu-btn');
-  const closeBtn = e.target.closest('.sidebar-close-btn');
-  
-  if (menuBtn && sidebar) {
-    sidebar.classList.add('open');
-    if (overlay) overlay.classList.add('show');
-  }
-  if (closeBtn && sidebar) {
-    sidebar.classList.remove('open');
-    if (overlay) overlay.classList.remove('show');
-  }
-  if (overlay && !e.target.closest('.sidebar')) {
-    sidebar.classList.remove('open');
-    overlay.classList.remove('show');
-  }
-});
 
