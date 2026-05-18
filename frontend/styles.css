@@ -441,7 +441,7 @@ body[data-theme="dark"] th, body[data-theme="dark"] td { color: #d9e3f4; }
 }
 @media (max-width: 720px) {
   .login-card { padding: 26px 20px 22px; }
-  .main { padding: 18px; }
+  .main { padding: 12px; }
   .page-head, .inventory-toolbar, .supplier-toolbar, .cashier-toolbar { flex-direction: column; align-items: stretch; }
   .section-actions { justify-content: stretch; }
   .button, .button.secondary, .button.ghost { width: 100%; }
@@ -450,6 +450,172 @@ body[data-theme="dark"] th, body[data-theme="dark"] td { color: #d9e3f4; }
 .pie-legend { min-width: 0; }
 
   .reports-view .stats-grid { grid-template-columns: 1fr; }
+
+  /* Mobile sidebar */
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+  .sidebar.open {
+    left: 0;
+  }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+  }
+  .sidebar-overlay.show {
+    display: block;
+  }
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+
+  /* Mobile header */
+  .header {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header-title {
+    font-size: 14px;
+  }
+
+  /* Mobile tables */
+  .table-responsive {
+    font-size: 12px;
+  }
+  table {
+    font-size: 11px;
+  }
+  th, td {
+    padding: 8px 6px !important;
+  }
+
+  /* Mobile forms */
+  input, select, textarea {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  /* Mobile cards */
+  .stat-card {
+    padding: 12px;
+  }
+  .stat-card .value {
+    font-size: 1.1rem;
+  }
+  .stat-card .label {
+    font-size: 10px;
+  }
+
+  /* Mobile grid products */
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+  .pos-product-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px;
+  }
+
+  /* Mobile modal */
+  .modal {
+    padding: 12px;
+  }
+  .modal-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 20px 16px 18px;
+    margin: 10px;
+  }
+  .login-card h1 {
+    font-size: 1.4rem;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .pos-product-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+  }
+
+  .button {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Mobile menu button */
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--surface);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text);
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .topbar-left {
+    order: 1;
+  }
+  .topbar-right {
+    order: 2;
+  }
+  .topbar-date {
+    order: 3;
+    width: 100%;
+    text-align: center;
+    margin-top: 8px;
+  }
+  .topbar h1 {
+    font-size: 1rem;
+  }
 }
 
 /* Reports styles - Mobile first */
