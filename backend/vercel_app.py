@@ -2,13 +2,16 @@ import os
 import sys
 from io import BytesIO
 
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
+handler_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, handler_dir)
+sys.path.insert(0, os.path.join(handler_dir, 'config'))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django
 django.setup()
+
+frontend_dir = os.path.join(os.path.dirname(handler_dir), 'frontend')
 
 def handler(event, context):
     http_method = event.get('httpMethod', 'GET')
@@ -19,7 +22,6 @@ def handler(event, context):
 
     static_extensions = ('.js', '.css', '.manifest', '.webmanifest')
     if path.endswith(static_extensions) or path.startswith('/static/'):
-        frontend_dir = os.path.join(project_root, 'frontend')
         file_path = os.path.join(frontend_dir, path.lstrip('/'))
         
         if os.path.exists(file_path):
@@ -38,6 +40,17 @@ def handler(event, context):
                 'statusCode': 200,
                 'headers': {'Content-Type': content_types.get(ext, 'text/plain')},
                 'body': content.decode('utf-8')
+            }
+
+    if path == '/' or path == '':
+        index_path = os.path.join(frontend_dir, 'index.html')
+        if os.path.exists(index_path):
+            with open(index_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'text/html'},
+                'body': content
             }
 
     wsgi_input = BytesIO(body.encode('utf-8') if body else b'')
