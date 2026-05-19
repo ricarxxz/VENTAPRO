@@ -1548,7 +1548,6 @@ async function handleSubmit(event) {
     const productData = {
       nombre: formData.get("nombre"),
       codigo: formData.get("codigo"),
-      codigo_barras: formData.get("codigo_barras") || "",
       stock_actual: parseInt(formData.get("stock_actual") || 0),
       stock_minimo: parseInt(formData.get("stock_minimo") || 0),
       descripcion: formData.get("descripcion") || "",
@@ -1569,7 +1568,6 @@ async function handleSubmit(event) {
     const productData = {
       nombre: formData.get("nombre"),
       codigo: formData.get("codigo"),
-      codigo_barras: formData.get("codigo_barras") || "",
       descripcion: formData.get("descripcion") || "",
       stock_actual: parseInt(formData.get("stock_actual") || 0),
       stock_minimo: parseInt(formData.get("stock_minimo") || 0),
@@ -1916,7 +1914,6 @@ function bulkUploadModal() {
             <li><code>stock_actual</code> - Stock actual (opcional)</li>
             <li><code>stock_minimo</code> - Stock mínimo (opcional)</li>
             <li><code>descripcion</code> - Descripción (opcional)</li>
-            <li><code>codigo_barras</code> - Código de barras (opcional)</li>
             <li><code>categoria</code> - Nombre de categoría (opcional)</li>
             <li><code>proveedor</code> - Nombre del proveedor (opcional)</li>
           </ul>
@@ -2037,7 +2034,7 @@ async function confirmBulkImport() {
 }
 
 function downloadTemplate() {
-  const csvContent = "codigo,nombre,precio_venta,costo,stock_actual,stock_minimo,descripcion,codigo_barras,categoria,proveedor\nPROD001,Producto Ejemplo,100.00,50.00,10,5,Descripcion del producto,1234567890123,Electronica,Proveedor A\nPROD002,Otro Producto,200.00,100.00,20,10,Otra descripcion,9876543210987,Alimentos,Proveedor B";
+  const csvContent = "codigo,nombre,precio_venta,costo,stock_actual,stock_minimo,descripcion,categoria,proveedor\nPROD001,Producto Ejemplo,100.00,50.00,10,5,Descripcion del producto,Electronica,Proveedor A\nPROD002,Otro Producto,200.00,100.00,20,10,Otra descripcion,Alimentos,Proveedor B";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -2267,10 +2264,6 @@ function formNewProduct() {
           <input class="input" name="stock_minimo" type="number" min="0" value="0" />
         </div>
         <div class="form-group">
-          <label>Código de barras</label>
-          <input class="input" name="codigo_barras" type="text" />
-        </div>
-        <div class="form-group">
           <label>Descripción</label>
           <textarea class="input" name="descripcion" rows="3"></textarea>
         </div>
@@ -2331,10 +2324,6 @@ function formEditProduct(product) {
         <div class="form-group">
           <label>Código</label>
           <input class="input" name="codigo" type="text" required value="${escapeAttr(product.codigo || "")}" />
-        </div>
-        <div class="form-group">
-          <label>Código de barras</label>
-          <input class="input" name="codigo_barras" type="text" value="${escapeAttr(product.codigo_barras || "")}" />
         </div>
         <div class="form-group">
           <label>Descripción</label>
