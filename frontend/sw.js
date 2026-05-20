@@ -1,4 +1,4 @@
-const CACHE_NAME = "ventapro-static-v1";
+const CACHE_NAME = "ventapro-static-v2";
 const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
