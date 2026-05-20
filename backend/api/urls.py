@@ -11,6 +11,7 @@ from .views import (
     ImportarProductosView,
     ListaPrecioItemViewSet,
     ListaPrecioViewSet,
+    LocalViewSet,
     ProductoViewSet,
     ProveedorViewSet,
     ReportesViewSet,
@@ -21,6 +22,7 @@ from .views import (
 )
 
 router = DefaultRouter()
+router.register("locales", LocalViewSet, basename="local")
 router.register("usuarios", UsuarioViewSet, basename="usuario")
 router.register("proveedores", ProveedorViewSet, basename="proveedor")
 router.register("categorias", CategoriaViewSet, basename="categoria")

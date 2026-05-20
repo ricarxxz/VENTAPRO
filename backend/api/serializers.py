@@ -3,10 +3,17 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Compra, Categoria, DetalleCompra, DetalleVenta, Gasto, ListaPrecio, ListaPrecioItem, Producto, Proveedor, TurnoCaja, Venta
+from .models import Compra, Categoria, DetalleCompra, DetalleVenta, Gasto, ListaPrecio, ListaPrecioItem, Local, Producto, Proveedor, TurnoCaja, Venta
 from rest_framework import serializers
 from .models import Usuario
 Usuario = get_user_model()
+
+
+class LocalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Local
+        fields = ["id", "nombre", "direccion", "telefono", "nit", "activo", "estado_sync", "created_at", "updated_at"]
+        read_only_fields = ["estado_sync", "created_at", "updated_at"]
 
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -14,7 +21,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'telefono', 'rol', 'password', 'is_logged_in']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'telefono', 'rol', 'password', 'is_logged_in', 'local']
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
@@ -42,6 +49,7 @@ class ProveedorSerializer(serializers.ModelSerializer):
         model = Proveedor
         fields = [
             "id",
+            "local",
             "nombre",
             "documento_fiscal",
             "contacto",
@@ -61,7 +69,7 @@ class CategoriaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Categoria
-        fields = ["id", "nombre", "descripcion", "estado_sync", "created_at", "updated_at"]
+        fields = ["id", "local", "nombre", "descripcion", "estado_sync", "created_at", "updated_at"]
         read_only_fields = ["estado_sync", "created_at", "updated_at"]
 
 
@@ -74,6 +82,7 @@ class ProductoSerializer(serializers.ModelSerializer):
         model = Producto
         fields = [
             "id",
+            "local",
             "codigo",
             "codigo_barras",
             "nombre",
@@ -103,6 +112,7 @@ class ListaPrecioItemSerializer(serializers.ModelSerializer):
         model = ListaPrecioItem
         fields = [
             "id",
+            "local",
             "lista_precio",
             "lista_precio_nombre",
             "producto",
@@ -124,6 +134,7 @@ class ListaPrecioSerializer(serializers.ModelSerializer):
         model = ListaPrecio
         fields = [
             "id",
+            "local",
             "nombre",
             "descripcion",
             "porcentaje_margen",
@@ -148,6 +159,7 @@ class TurnoCajaSerializer(serializers.ModelSerializer):
         model = TurnoCaja
         fields = [
             "id",
+            "local",
             "usuario",
             "usuario_nombre",
             "fecha_apertura",
@@ -232,6 +244,7 @@ class VentaSerializer(serializers.ModelSerializer):
         model = Venta
         fields = [
             "id",
+            "local",
             "turno_caja",
             "turno_caja_detalle",
             "vendedor",
@@ -309,6 +322,7 @@ class CompraSerializer(serializers.ModelSerializer):
         model = Compra
         fields = [
             "id",
+            "local",
             "proveedor",
             "proveedor_nombre",
             "usuario",
@@ -332,10 +346,12 @@ class CompraSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         detalles = validated_data.pop("detalles", [])
         request = self.context["request"]
+        local = request.user.local if hasattr(request.user, 'local') and request.user.local else None
         if detalles:
             return Compra.registrar_compra(
                 proveedor=validated_data["proveedor"],
                 usuario=validated_data.get("usuario") or request.user,
+                local=local,
                 numero_documento=validated_data["numero_documento"],
                 detalles=detalles,
                 impuesto_total=validated_data.get("impuesto_total", Decimal("0.00")),
@@ -370,5 +386,5 @@ class DashboardResumenSerializer(serializers.Serializer):
 class GastoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Gasto
-        fields = ["id", "fecha", "monto", "tipo", "descripcion", "created_at", "updated_at"]
+        fields = ["id", "local", "fecha", "monto", "tipo", "descripcion", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]

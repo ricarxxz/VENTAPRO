@@ -130,9 +130,7 @@ const nav = {
   ],
 };
 
-const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-  ? "http://127.0.0.1:8000/api" 
-  : "/api";
+const API_BASE = "http://127.0.0.1:8000/api";
 
 const state = {
   authenticated: false,
@@ -500,10 +498,10 @@ async function createCashier(userData) {
   const cashierData = {
     username: userData.username,
     password: userData.password,
-    first_name: userData.first_name || "",
-    last_name: userData.last_name || "",
-    rol: "vendedor",
-    email: userData.email || "",
+    first_name: userData.nombre || "",    // Toma el campo 'nombre' del form
+    last_name: userData.apellido || "",   // Toma el campo 'apellido' del form
+    rol: "vendedor",                      // O 'cajero', según models.py
+    email: userData.email || userData.correo || "",
     telefono: userData.telefono || ""
   };
 
@@ -806,9 +804,11 @@ function shellView() {
   const user = state.session;
   const items = getAllowedViews();
   const meta = getViewMeta(state.activeView);
+  const sidebarOpen = state.sidebarOpen || false;
   return `
     <div class="screen">
-      <aside class="sidebar">
+      <div class="sidebar-backdrop ${sidebarOpen ? "show" : ""}" data-action="close-sidebar"></div>
+      <aside class="sidebar ${sidebarOpen ? "open" : ""}">
         <div class="brand">
           <h1 class="brand-name">VentaPro</h1>
           <p class="brand-subtitle">Sistema de Ventas</p>
@@ -829,12 +829,13 @@ function shellView() {
       </aside>
       <section class="content-shell">
         <header class="topbar">
+          <button class="hamburger" type="button" data-action="toggle-sidebar">☰</button>
           <div>
             <h1>${meta.title}</h1>
             <div class="topbar-date">${getCurrentDateLabel()}</div>
           </div>
           <div id="sync-badge" class="sync-badge"></div>
-          <button class="topbar-link" type="button" data-action="logout">${iconLogout()} Cerrar Sesión</button>
+          <button class="topbar-link" type="button" data-action="logout">${iconLogout()} <span>Cerrar Sesión</span></button>
         </header>
         <main class="main"><div class="view">${renderView(state.activeView)}</div></main>
       </section>
@@ -1375,6 +1376,7 @@ function handleClick(event) {
 
   if (target.dataset.view) {
     state.activeView = target.dataset.view;
+    state.sidebarOpen = false;
     if (state.activeView === "reports") {
       loadReportData().then(() => render());
     } else {
@@ -1384,9 +1386,15 @@ function handleClick(event) {
   }
 
   switch (target.dataset.action) {
-    case "logout":
-      logout();
+    case "toggle-sidebar":
+      state.sidebarOpen = !state.sidebarOpen;
+      render();
       break;
+    case "close-sidebar":
+      state.sidebarOpen = false;
+      render();
+      break;
+    case "logout":
     case "help":
       break;
     case "increase-font":
@@ -1548,6 +1556,7 @@ async function handleSubmit(event) {
     const productData = {
       nombre: formData.get("nombre"),
       codigo: formData.get("codigo"),
+      codigo_barras: formData.get("codigo_barras") || "",
       stock_actual: parseInt(formData.get("stock_actual") || 0),
       stock_minimo: parseInt(formData.get("stock_minimo") || 0),
       descripcion: formData.get("descripcion") || "",
@@ -1568,6 +1577,7 @@ async function handleSubmit(event) {
     const productData = {
       nombre: formData.get("nombre"),
       codigo: formData.get("codigo"),
+      codigo_barras: formData.get("codigo_barras") || "",
       descripcion: formData.get("descripcion") || "",
       stock_actual: parseInt(formData.get("stock_actual") || 0),
       stock_minimo: parseInt(formData.get("stock_minimo") || 0),
@@ -1914,6 +1924,7 @@ function bulkUploadModal() {
             <li><code>stock_actual</code> - Stock actual (opcional)</li>
             <li><code>stock_minimo</code> - Stock mínimo (opcional)</li>
             <li><code>descripcion</code> - Descripción (opcional)</li>
+            <li><code>codigo_barras</code> - Código de barras (opcional)</li>
             <li><code>categoria</code> - Nombre de categoría (opcional)</li>
             <li><code>proveedor</code> - Nombre del proveedor (opcional)</li>
           </ul>
@@ -2034,7 +2045,7 @@ async function confirmBulkImport() {
 }
 
 function downloadTemplate() {
-  const csvContent = "codigo,nombre,precio_venta,costo,stock_actual,stock_minimo,descripcion,categoria,proveedor\nPROD001,Producto Ejemplo,100.00,50.00,10,5,Descripcion del producto,Electronica,Proveedor A\nPROD002,Otro Producto,200.00,100.00,20,10,Otra descripcion,Alimentos,Proveedor B";
+  const csvContent = "codigo,nombre,precio_venta,costo,stock_actual,stock_minimo,descripcion,codigo_barras,categoria,proveedor\nPROD001,Producto Ejemplo,100.00,50.00,10,5,Descripcion del producto,1234567890123,Electronica,Proveedor A\nPROD002,Otro Producto,200.00,100.00,20,10,Otra descripcion,9876543210987,Alimentos,Proveedor B";
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -2264,6 +2275,10 @@ function formNewProduct() {
           <input class="input" name="stock_minimo" type="number" min="0" value="0" />
         </div>
         <div class="form-group">
+          <label>Código de barras</label>
+          <input class="input" name="codigo_barras" type="text" />
+        </div>
+        <div class="form-group">
           <label>Descripción</label>
           <textarea class="input" name="descripcion" rows="3"></textarea>
         </div>
@@ -2324,6 +2339,10 @@ function formEditProduct(product) {
         <div class="form-group">
           <label>Código</label>
           <input class="input" name="codigo" type="text" required value="${escapeAttr(product.codigo || "")}" />
+        </div>
+        <div class="form-group">
+          <label>Código de barras</label>
+          <input class="input" name="codigo_barras" type="text" value="${escapeAttr(product.codigo_barras || "")}" />
         </div>
         <div class="form-group">
           <label>Descripción</label>

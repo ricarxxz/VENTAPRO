@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 import pandas as pd
 import io
 
-from .models import Compra, Categoria, DetalleCompra, DetalleVenta, Gasto, ListaPrecio, ListaPrecioItem, Producto, Proveedor, TurnoCaja, Usuario, Venta, EstadoSync, ROL_ADMINISTRADOR
+from .models import Compra, Categoria, DetalleCompra, DetalleVenta, Gasto, ListaPrecio, ListaPrecioItem, Local, Producto, Proveedor, TurnoCaja, Usuario, Venta, EstadoSync, ROL_ADMINISTRADOR
 from .permissions import IsAdministrador, IsAdministradorOReadOnly, IsAdministradorOVendedor
 from .serializers import (
     CompraSerializer,
@@ -25,6 +25,7 @@ from .serializers import (
     GastoSerializer,
     ListaPrecioItemSerializer,
     ListaPrecioSerializer,
+    LocalSerializer,
     ProductoSerializer,
     ProveedorSerializer,
     SyncPayloadSerializer,
@@ -35,25 +36,63 @@ from .serializers import (
 )
 
 
+class MultiTenantMixin:
+    def get_local(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return None
+        if hasattr(user, 'local') and user.local:
+            return user.local
+        return None
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        local = self.get_local()
+        if local:
+            queryset = queryset.filter(local=local)
+        return queryset
+
+    def perform_create(self, serializer):
+        local = self.get_local()
+        serializer.save(local=local)
+
+
+class LocalViewSet(viewsets.ModelViewSet):
+    queryset = Local.objects.all().order_by("nombre")
+    serializer_class = LocalSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if hasattr(user, 'local') and user.local:
+            queryset = queryset.filter(id=user.local.id)
+        return queryset
+
+
 class AdministradorOnlyViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdministrador]
 
 
-# Busca esta parte en views.py
-class UsuarioViewSet(viewsets.ModelViewSet): # Cambia temporalmente la herencia si es necesario
+class UsuarioViewSet(MultiTenantMixin, viewsets.ModelViewSet):
     queryset = Usuario.objects.all().order_by("username")
     serializer_class = UsuarioSerializer
-    permission_classes = [IsAuthenticated] # Solo requiere estar logueado
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if hasattr(user, 'local') and user.local:
+            queryset = queryset.filter(local=user.local)
+        return queryset.order_by("username")
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def me(self, request):
-        """Devuelve los datos del usuario autenticado (ruta: /usuarios/me/)."""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def login_status(self, request):
-        """Actualiza el estado de sesión del usuario."""
         usuario = request.user
         usuario.is_logged_in = True
         usuario.save(update_fields=["is_logged_in"])
@@ -61,37 +100,36 @@ class UsuarioViewSet(viewsets.ModelViewSet): # Cambia temporalmente la herencia 
 
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def logout_status(self, request):
-        """Marca al usuario como desconectado."""
         usuario = request.user
         usuario.is_logged_in = False
         usuario.save(update_fields=["is_logged_in"])
         return Response({"status": "logged_out", "is_logged_in": False})
 
-class ProveedorViewSet(viewsets.ModelViewSet):
+class ProveedorViewSet(MultiTenantMixin, viewsets.ModelViewSet):
     queryset = Proveedor.objects.all().order_by("nombre")
     serializer_class = ProveedorSerializer
     permission_classes = [IsAdministradorOReadOnly]
 
 
-class CategoriaViewSet(viewsets.ModelViewSet):
+class CategoriaViewSet(MultiTenantMixin, viewsets.ModelViewSet):
     queryset = Categoria.objects.all().order_by("nombre")
     serializer_class = CategoriaSerializer
     permission_classes = [IsAdministradorOReadOnly]
 
 
-class ProductoViewSet(viewsets.ModelViewSet):
+class ProductoViewSet(MultiTenantMixin, viewsets.ModelViewSet):
     queryset = Producto.objects.select_related("proveedor").all().order_by("nombre")
     serializer_class = ProductoSerializer
     permission_classes = [IsAdministradorOReadOnly]
 
 
-class ListaPrecioViewSet(viewsets.ModelViewSet):
+class ListaPrecioViewSet(MultiTenantMixin, viewsets.ModelViewSet):
     queryset = ListaPrecio.objects.prefetch_related("items__producto").all().order_by("nombre")
     serializer_class = ListaPrecioSerializer
     permission_classes = [IsAdministradorOReadOnly]
 
 
-class ListaPrecioItemViewSet(viewsets.ModelViewSet):
+class ListaPrecioItemViewSet(MultiTenantMixin, viewsets.ModelViewSet):
     queryset = ListaPrecioItem.objects.select_related("lista_precio", "producto").all().order_by(
         "lista_precio__nombre", "producto__nombre"
     )
@@ -106,7 +144,9 @@ class TurnoCajaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = TurnoCaja.objects.select_related("usuario").all().order_by("-fecha_apertura")
         user = self.request.user
-        if user.is_authenticated and getattr(user, "rol", None) != ROL_ADMINISTRADOR:
+        if hasattr(user, 'local') and user.local:
+            queryset = queryset.filter(local=user.local)
+        elif user.is_authenticated and getattr(user, "rol", None) != ROL_ADMINISTRADOR:
             queryset = queryset.filter(usuario=user)
         return queryset
 
@@ -116,7 +156,10 @@ class TurnoCajaViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+        local = None
+        if hasattr(self.request.user, 'local') and self.request.user.local:
+            local = self.request.user.local
+        serializer.save(usuario=self.request.user, local=local)
 
     @action(detail=True, methods=["post"])
     def cerrar(self, request, pk=None):
@@ -142,7 +185,9 @@ class VentaViewSet(viewsets.ModelViewSet):
             "detalles__producto"
         )
         user = self.request.user
-        if user.is_authenticated and getattr(user, "rol", None) != ROL_ADMINISTRADOR:
+        if hasattr(user, 'local') and user.local:
+            queryset = queryset.filter(turno_caja__local=user.local)
+        elif user.is_authenticated and getattr(user, "rol", None) != ROL_ADMINISTRADOR:
             queryset = queryset.filter(vendedor=user)
         return queryset.order_by("-fecha_venta")
 
@@ -174,24 +219,46 @@ class CompraViewSet(viewsets.ModelViewSet):
     serializer_class = CompraSerializer
     permission_classes = [IsAdministradorOReadOnly]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if hasattr(user, 'local') and user.local:
+            queryset = queryset.filter(proveedor__local=user.local)
+        return queryset.order_by("-fecha_compra")
+
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+        local = None
+        if hasattr(self.request.user, 'local') and self.request.user.local:
+            local = self.request.user.local
+        serializer.save(usuario=self.request.user, local=local)
 
 
-class DetalleCompraViewSet(viewsets.ModelViewSet):
+class DetalleCompraViewSet(MultiTenantMixin, viewsets.ModelViewSet):
     queryset = DetalleCompra.objects.select_related("compra", "producto").all().order_by("created_at")
     serializer_class = DetalleCompraSerializer
     permission_classes = [IsAdministradorOReadOnly]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if hasattr(user, 'local') and user.local:
+            queryset = queryset.filter(compra__proveedor__local=user.local)
+        return queryset.order_by("created_at")
 
 
 class DashboardViewSet(viewsets.ViewSet):
     permission_classes = [IsAdministradorOVendedor]
 
     def list(self, request):
+        user = request.user
+        local = user.local if hasattr(user, 'local') and user.local else None
+
         es_admin = request.user.rol == ROL_ADMINISTRADOR
         base_ventas = Venta.objects.filter(estado=Venta.ESTADO_PAGADA)
 
-        if not es_admin:
+        if local:
+            base_ventas = base_ventas.filter(turno_caja__local=local)
+        elif not es_admin:
             base_ventas = base_ventas.filter(vendedor=request.user)
 
         hoy = timezone.localdate()
@@ -236,13 +303,25 @@ class DashboardViewSet(viewsets.ViewSet):
                     })
                 otros_value = round(100 - sum(item["value"] for item in top_products))
 
+        productos_qs = Producto.objects.filter(activo=True)
+        if local:
+            productos_qs = productos_qs.filter(local=local)
+
+        turnos_qs = TurnoCaja.objects.filter(estado=TurnoCaja.ESTADO_ABIERTO)
+        if local:
+            turnos_qs = turnos_qs.filter(local=local)
+
+        compras_qs = Compra.objects.filter(fecha_compra__gte=hoy_dt, fecha_compra__lt=manana_dt)
+        if local:
+            compras_qs = compras_qs.filter(proveedor__local=local)
+
         resumen = {
-            "productos": Producto.objects.filter(activo=True).count(),
-            "productos_stock_bajo": Producto.objects.filter(activo=True, stock_actual__lte=F("stock_minimo")).count(),
+            "productos": productos_qs.count(),
+            "productos_stock_bajo": productos_qs.filter(stock_actual__lte=F("stock_minimo")).count(),
             "ventas_hoy": ventas_hoy_qs.count(),
             "total_ventas_hoy": float(ventas_hoy_total),
-            "turnos_abiertos": TurnoCaja.objects.filter(estado=TurnoCaja.ESTADO_ABIERTO).count(),
-            "compras_hoy": Compra.objects.filter(fecha_compra__gte=hoy_dt, fecha_compra__lt=manana_dt).count(),
+            "turnos_abiertos": turnos_qs.count(),
+            "compras_hoy": compras_qs.count(),
             "weeklySales": dias_semana,
             "topProducts": top_products,
             "otrosPorcentaje": otros_value,
@@ -436,6 +515,7 @@ class ImportarProductosView(APIView):
                     resultado["existe"] = producto_existente is not None
                     resultados.append(resultado)
                 else:
+                    local = request.user.local if hasattr(request.user, 'local') and request.user.local else None
                     producto, created = Producto.objects.update_or_create(
                         codigo=codigo,
                         defaults={
@@ -448,6 +528,7 @@ class ImportarProductosView(APIView):
                             "codigo_barras": codigo_barras,
                             "categoria": categoria_obj,
                             "proveedor": proveedor_obj,
+                            "local": local,
                             "estado_sync": EstadoSync.PENDIENTE
                         }
                     )
@@ -483,14 +564,27 @@ class GastoViewSet(viewsets.ModelViewSet):
     serializer_class = GastoSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if hasattr(user, 'local') and user.local:
+            queryset = queryset.filter(local=user.local)
+        return queryset.order_by("-fecha")
+
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+        local = None
+        if hasattr(self.request.user, 'local') and self.request.user.local:
+            local = self.request.user.local
+        serializer.save(usuario=self.request.user, local=local)
 
 
 class ReportesViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
+        user = request.user
+        local = user.local if hasattr(user, 'local') and user.local else None
+
         fecha_str = request.query_params.get("fecha")
         mes = request.query_params.get("mes")
         anio = request.query_params.get("anio")
@@ -505,6 +599,10 @@ class ReportesViewSet(viewsets.ViewSet):
 
         ventas_dia = Venta.objects.filter(fecha_venta__date=fecha, estado=Venta.ESTADO_PAGADA)
         gastos_dia = Gasto.objects.filter(fecha=fecha)
+
+        if local:
+            ventas_dia = ventas_dia.filter(turno_caja__local=local)
+            gastos_dia = gastos_dia.filter(local=local)
 
         total_ventas_dia = ventas_dia.aggregate(total=Sum("total"))["total"] or Decimal("0.00")
         total_gastos_dia = gastos_dia.aggregate(total=Sum("monto"))["total"] or Decimal("0.00")
@@ -522,6 +620,9 @@ class ReportesViewSet(viewsets.ViewSet):
                     fecha__year=anio_int,
                     fecha__month=mes_int
                 )
+                if local:
+                    ventas_mes = ventas_mes.filter(turno_caja__local=local)
+                    gastos_mes = gastos_mes.filter(local=local)
                 total_ventas_mes = ventas_mes.aggregate(total=Sum("total"))["total"] or Decimal("0.00")
                 total_gastos_mes = gastos_mes.aggregate(total=Sum("monto"))["total"] or Decimal("0.00")
             except ValueError:

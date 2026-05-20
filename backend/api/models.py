@@ -7,8 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import Sum
 from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
-from django.db import models
+
 
 class EstadoSync(models.TextChoices):
     PENDIENTE = "pendiente", "Pendiente"
@@ -21,9 +20,26 @@ class UUIDTimeStampedModel(models.Model):
     estado_sync = models.CharField(max_length=20, choices=EstadoSync.choices, default=EstadoSync.PENDIENTE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    local = models.ForeignKey('Local', on_delete=models.CASCADE, null=True, blank=True, related_name="%(class)s_set")
 
     class Meta:
         abstract = True
+
+
+class Local(UUIDTimeStampedModel):
+    nombre = models.CharField(max_length=180)
+    direccion = models.CharField(max_length=255, blank=True)
+    telefono = models.CharField(max_length=30, blank=True)
+    nit = models.CharField(max_length=40, blank=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "local"
+        verbose_name_plural = "locales"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
 
 
 
@@ -40,6 +56,7 @@ ROL_CHOICES = [
 # 2. Ahora define la clase Usuario
 class Usuario(AbstractUser):
     telefono = models.CharField(max_length=15, blank=True, null=True)
+    local = models.ForeignKey(Local, on_delete=models.CASCADE, null=True, blank=True, related_name="usuarios")
 
     rol = models.CharField(
         max_length=20,
@@ -392,9 +409,12 @@ class Venta(UUIDTimeStampedModel):
             if monto_pagado < total:
                 raise ValidationError("El monto pagado es insuficiente para completar la venta.")
 
+            local = turno_caja.local
+
             venta = cls.objects.create(
                 turno_caja=turno_caja,
                 vendedor=vendedor,
+                local=local,
                 cliente_nombre=cliente_nombre,
                 cliente_documento=cliente_documento,
                 subtotal=subtotal,
@@ -412,6 +432,7 @@ class Venta(UUIDTimeStampedModel):
             venta.save(update_fields=["numero_factura", "updated_at"])
             for detalle in detalle_items:
                 detalle.venta = venta
+                detalle.local = local
             DetalleVenta.objects.bulk_create(detalle_items)
             return venta
 
@@ -493,6 +514,7 @@ class Compra(UUIDTimeStampedModel):
         *,
         proveedor: Proveedor,
         usuario: Usuario,
+        local,
         numero_documento: str,
         detalles: list[dict],
         impuesto_total: Decimal | int | str = Decimal("0.00"),
@@ -523,12 +545,14 @@ class Compra(UUIDTimeStampedModel):
                         cantidad=cantidad,
                         costo_unitario=costo_unitario,
                         subtotal=line_subtotal,
+                        local=local,
                     )
                 )
 
             compra = cls.objects.create(
                 proveedor=proveedor,
                 usuario=usuario,
+                local=local,
                 numero_documento=numero_documento,
                 subtotal=subtotal,
                 impuesto_total=impuesto_total,
