@@ -837,7 +837,7 @@ function shellView() {
             <div class="topbar-date">${getCurrentDateLabel()}</div>
           </div>
           <div id="sync-badge" class="sync-badge"></div>
-          <button class="topbar-link" type="button" data-action="logout">${iconLogout()} <span>Cerrar Sesión</span></button>
+          <button class="topbar-link logout-btn" type="button" data-action="logout" title="Cerrar Sesión">${iconLogout()}</button>
         </header>
         <main class="main"><div class="view">${renderView(state.activeView)}</div></main>
       </section>
@@ -1124,7 +1124,6 @@ function suppliersView() {
                 <div>⌂ ${supplier.direccion || "Sin dirección"}</div>
               </div>
               ${supplier.contacto ? `<div><div class="subtle-text" style="margin-bottom:8px;">Contacto:</div><div>${supplier.contacto}</div></div>` : ""}
-              <button class="button ghost" type="button" data-action="new-order" data-id="${supplier.id}">Nueva Orden de Compra</button>
             </article>
           `).join("")}
         </div>
@@ -1397,7 +1396,9 @@ function handleClick(event) {
       render();
       break;
     case "logout":
-    case "help":
+      modalConfirm("¿Está seguro de que desea cerrar sesión?").then((confirmed) => {
+        if (confirmed) logout();
+      });
       break;
     case "increase-font":
       state.settings.fontSize = (state.settings.fontSize || 14) + 2;
@@ -2175,7 +2176,6 @@ function actionMessage(action) {
     "new-supplier": "Crear nuevo proveedor.",
     "edit-supplier": "Editar proveedor.",
     "delete-supplier": "Eliminar proveedor.",
-    "new-order": "Crear nueva orden de compra.",
     "view-order": "Ver detalles de la orden.",
     "new-cashier": "Crear nuevo cajero.",
     "edit-cashier": "Editar cajero.",
