@@ -2723,7 +2723,7 @@ function updateSyncBadge() {
   const badge = document.getElementById("sync-badge");
   if (!badge) return;
   badge.classList.toggle("offline", !navigator.onLine);
-  badge.textContent = navigator.onLine ? `Sincronizado - ${getClockLabel()}` : "Sin conexión";
+  badge.innerHTML = navigator.onLine ? `Sincronizado <span class="sync-time">- ${getClockLabel()}</span>` : "Sin conexión";
 }
 
 function showTooltip(tooltip, html, target) {
